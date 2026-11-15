@@ -8,6 +8,7 @@
   const count = document.querySelector('#impactCount');
   const refresh = document.querySelector('#refreshImpact');
   const rosters = new Map();
+  const profiles = new Map();
   let teams = [], schedule = null, injuryTime = null;
   const localDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const safe = value => escapeHtml(value);
@@ -57,7 +58,30 @@
         const position = String(injury.position || '').toUpperCase();
         const unavailable = new Set(team.injuries.map(item => String(item.athleteId || '')));
         const candidates = roster.players.filter(player => position !== '-' && position && String(player.position || '').toUpperCase() === position && String(player.id) !== String(injury.athleteId) && !unavailable.has(String(player.id)) && /^(active|available)$/i.test(player.status) && !player.injuries?.length);
-        result.innerHTML = candidates.length ? `<p><strong>Same-position teammates to investigate</strong></p><p>${candidates.map(player => safe(player.name)).join(' · ')}</p><small>Position match only; minutes, role, and waiver availability are not verified. A teammate may not replace this player in the rotation.</small>` : '<p>No available same-position teammates found in the roster data. Check the team rotation for alternatives.</p>';
+        if (!candidates.length) {
+          result.innerHTML = '<p>No available same-position teammates found in the roster data. Check the team rotation for alternatives.</p>';
+          return;
+        }
+        result.textContent = 'Loading candidate production...';
+        const details = await Promise.all(candidates.map(async player => {
+          if (!profiles.has(player.id)) profiles.set(player.id, get(`/api/players/${player.id}`).catch(error => { profiles.delete(player.id); throw error; }));
+          try { return await profiles.get(player.id); } catch (_) { return null; }
+        }));
+        if (!result.isConnected) return;
+        const games = upcoming(team)?.length ?? null;
+        result.innerHTML = `<p><strong>Same-position teammates to investigate</strong></p><div class="impact-candidates">${candidates.map((player, index) => `<article class="impact-candidate-card"><div class="impact-candidate">${portrait(player.name, player.headshot)}<div><strong>${safe(player.name)}</strong><small>${safe(player.position)} | ${safe(player.status)}</small></div></div>${fantasyProductionMarkup(details[index], games)}<div class="impact-candidate-actions"><button class="secondary-action" data-candidate-profile="${index}" type="button">Player profile</button><button class="secondary-action" data-candidate-compare="${index}" type="button">Add to comparison</button></div></article>`).join('')}</div><p class="muted">Fantasy PTS = PTS + 1.2 REB + 1.5 AST + 3 STL + 3 BLK - TO. Baseline = season fantasy PTS per game x scheduled games; assumes full participation. Role, minutes changes, matchups, and league availability are not predicted.</p><p class="impact-compare-status" role="status"></p>`;
+        result.querySelectorAll('[data-candidate-profile]').forEach(control => control.onclick = () => {
+          const player = candidates[Number(control.dataset.candidateProfile)];
+          openPlayerProfile(player.id, player, team.displayName);
+        });
+        result.querySelectorAll('[data-candidate-compare]').forEach(control => control.onclick = async () => {
+          const index = Number(control.dataset.candidateCompare);
+          try {
+            await addFantasyComparison({ ...candidates[index], teamCode: team.abbreviation }, team.displayName, details[index]);
+            control.textContent = 'Selected'; control.disabled = true;
+            result.querySelector('.impact-compare-status').textContent = 'Player selected. Use the comparison bar to compare two or three players.';
+          } catch (error) { result.querySelector('.impact-compare-status').textContent = error.message; }
+        });
       } catch (_) { result.textContent = 'Roster data is unavailable right now. Try again later.'; }
     }));
   }

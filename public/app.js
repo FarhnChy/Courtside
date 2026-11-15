@@ -402,12 +402,35 @@ const additionalAwardLadders = [
     ]
   }
 ];
+const awardRosterCache = new Map();
+async function loadAwardHeadshots(root) {
+  const teamIds = { GSW: 9, SAC: 23, MEM: 29, UTA: 26, OKC: 25, CHA: 30, SAS: 24, MIN: 16 };
+  await Promise.all([...root.querySelectorAll('[data-award-player]')].map(async portrait => {
+    const teamId = teamIds[portrait.dataset.awardTeam];
+    if (!teamId) return;
+    if (!awardRosterCache.has(teamId)) awardRosterCache.set(teamId, fetchApi(`/api/teams/${teamId}/roster`).then(response => {
+      if (!response.ok) throw new Error('Roster unavailable');
+      return response.json();
+    }).catch(error => { awardRosterCache.delete(teamId); throw error; }));
+    try {
+      const roster = await awardRosterCache.get(teamId);
+      const player = roster.players.find(player => player.name === portrait.dataset.awardPlayer);
+      if (!player?.headshot || !portrait.isConnected) return;
+      const photo = document.createElement('img');
+      photo.className = 'mvp-headshot'; photo.alt = ''; photo.loading = 'lazy';
+      photo.onerror = () => photo.remove();
+      photo.src = player.headshot;
+      portrait.append(photo);
+    } catch (_) { /* Initials remain visible when a roster or photo is unavailable. */ }
+  }));
+}
 function renderAdditionalAwardLadder(ladder) {
-  return `<section class="panel award-watch-card"><div class="panel-title"><div><p class="eyebrow">${escapeHtml(ladder.label)}</p><h2>${escapeHtml(ladder.title)}</h2></div><span class="pill">${escapeHtml(ladder.date)}</span></div><p class="muted">${escapeHtml(ladder.description)}</p>${ladder.players.map(player => `<div class="seed-chance-row"><span class="standing-rank">${escapeHtml(player.rank)}</span>${logo(player.team, 'mini-logo')}<div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}<a class="source-link" href="${escapeHtml(ladder.url)}" target="_blank" rel="noreferrer">Read source and rankings</a></section>`;
+  return `<section class="panel award-watch-card"><div class="panel-title"><div><p class="eyebrow">${escapeHtml(ladder.label)}</p><h2>${escapeHtml(ladder.title)}</h2></div><span class="pill">${escapeHtml(ladder.date)}</span></div><p class="muted">${escapeHtml(ladder.description)}</p>${ladder.players.map(player => `<div class="seed-chance-row"><span class="standing-rank">${escapeHtml(player.rank)}</span><span class="award-headshot" data-award-player="${escapeHtml(player.player)}" data-award-team="${escapeHtml(player.team)}" aria-hidden="true"><span>${escapeHtml(initials(player.player))}</span></span><div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}<a class="source-link" href="${escapeHtml(ladder.url)}" target="_blank" rel="noreferrer">Read source and rankings</a></section>`;
 }
 function renderFutures(){
   const root=document.querySelector('#futuresGrid');
   root.innerHTML=`<section class="demo-disclosure futures-disclosure"><strong>Rankings and standings, not odds</strong><span>Award lists are dated snapshots with sources below. Conference leaders use current ESPN standings.</span><span>${sourceBadge('ESPN standings',liveStandings.updatedAt,'Standings')}</span></section><section class="panel award-race-card awards-sources"><div class="panel-title"><div><p class="eyebrow">AWARDS RACE</p><h2>MVP ladder</h2></div><span class="pill">Nov 6, 2026 snapshot</span></div><p>NBA.com&#39;s top five at publication. Rankings and stats are a manually saved snapshot and do not update automatically.</p><div class="mvp-ladder">${mvpLadderSnapshot.map((player,index) => `<div class="seed-chance-row"><span class="standing-rank">${index + 1}</span><img class="mvp-headshot" src="${escapeHtml(espnHeadshot(player.id))}" alt=""><div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}</div><a class="source-link" href="https://www.nba.com/news/kia-mvp-ladder-nov-6-2026" target="_blank" rel="noreferrer">Read the Nov 6 ladder</a><a class="source-link" href="https://www.nba.com/news/category/kia-race-to-the-mvp-ladder" target="_blank" rel="noreferrer">Latest MVP ladders</a></section>${additionalAwardLadders.map(renderAdditionalAwardLadder).join('')}${seedRows('east','East')}${seedRows('west','West')}`;
+  loadAwardHeadshots(root);
 }
 const viewRoutes = { fantasy:'fantasyImpact', scores:'scores', schedule:'scheduleView', standings:'standings', teams:'teamsView', injuries:'injuriesView', moves:'transactionsView', finance:'teamsView', 'free-agents':'freeAgentsView', predict:'predict', futures:'futures' };
 const routeForView = viewId => Object.entries(viewRoutes).find(([,id]) => id === viewId)?.[0] || 'fantasy';
@@ -447,7 +470,8 @@ document.querySelector('#addPastBracket').onclick=async()=>{
     selectBracketSeason(label);saveBracket();renderPredict();
   }catch(_){alert('That season\'s standings are not available right now.');}
 };
-document.querySelector('#prevDay').onclick=()=>{dayOffset--;renderDates();loadScheduleWindow()};document.querySelector('#nextDay').onclick=()=>{dayOffset++;renderDates();loadScheduleWindow()};
+document.querySelector('#prevDay').onclick=()=>{dayOffset--;renderDates();loadScheduleWindow()};
+document.querySelector('#nextDay').onclick=()=>{dayOffset++;renderDates();loadScheduleWindow()};
 renderDates();loadScheduleWindow();loadScheduleHub();renderCards();renderGame();renderSide();renderStandings();renderPredict();
 
 // Live data layer. The demo above remains an offline fallback.
@@ -717,7 +741,7 @@ async function openPlayerProfile(id, playerOverride = null, teamOverride = '') {
   try {
     const response = await fetchApi(`/api/players/${player.espnId || id}`); if (!response.ok) throw new Error('Profile unavailable'); const profile=await response.json();
     const history = profile.history || []; const latest = history[history.length-1]; const detailedPlayer={...player,position:profile.positions||player.position}; const detailedHeader=playerProfileHeader(detailedPlayer,teamName); currentProfileCandidate={...detailedPlayer,id,teamName,profile,latest};
-    root.innerHTML = `${detailedHeader}${history.length ? renderProfileHistory(history) : profileFallbackStats(player)}${renderAwards(profile.awards)}`;
+    root.innerHTML = `${detailedHeader}${typeof CourtsideFantasyAnalysis !== 'undefined' ? fantasyProductionMarkup(profile) : ''}${history.length ? renderProfileHistory(history) : profileFallbackStats(player)}${renderAwards(profile.awards)}`;
   } catch(error) { root.innerHTML = `${header}${profileFallbackStats(player)}`; }
 }
 
@@ -979,6 +1003,7 @@ startShamsWatch();
 
 // Cross-feature navigation and personalized surfaces.
 const comparisonState = [];
+let comparisonRequest = 0;
 let searchTimer = null;
 const searchDialog=document.querySelector('#searchDialog');
 document.querySelector('#searchButton').onclick=()=>{searchDialog.showModal();setTimeout(()=>document.querySelector('#globalSearchInput').focus(),0)};
@@ -1041,9 +1066,49 @@ async function renderTeamDashboard(roster) {
 }
 
 function updateCompareTray(){const tray=document.querySelector('#compareTray');tray.hidden=!comparisonState.length;document.querySelector('#compareCount').textContent=`${comparisonState.length} player${comparisonState.length===1?'':'s'} selected`;document.querySelector('#openComparison').disabled=comparisonState.length<2}
-document.querySelector('#playerDialog').addEventListener('click',event=>{if(!event.target.closest('.add-comparison')||!currentProfileCandidate)return;if(!comparisonState.some(player=>String(player.id)===String(currentProfileCandidate.id))&&comparisonState.length<3)comparisonState.push(currentProfileCandidate);updateCompareTray()});
+document.querySelector('#playerDialog').addEventListener('click',event=>{if(!event.target.closest('.add-comparison')||!currentProfileCandidate)return;addFantasyComparison(currentProfileCandidate,currentProfileCandidate.teamName,currentProfileCandidate.profile).catch(error=>{event.target.textContent=error.message})});
 document.querySelector('#clearComparison').onclick=()=>{comparisonState.splice(0);updateCompareTray()};
-document.querySelector('#openComparison').onclick=()=>{const labels=['PTS','REB','AST','FG%','3P%','FT%'];document.querySelector('#comparisonContent').innerHTML=`<h2 id="comparisonTitle">Player comparison</h2><div class="comparison-grid">${comparisonState.map(player=>`<article>${player.headshot?`<img src="${escapeHtml(player.headshot)}" alt="">`:''}<h3>${escapeHtml(player.name)}</h3><p>${escapeHtml(player.teamName)} · ${escapeHtml(player.position)}</p>${labels.map(label=>`<div><span>${label}</span><strong>${escapeHtml(player.latest?.values?.[label]??'—')}</strong></div>`).join('')}</article>`).join('')}</div>`;document.querySelector('#comparisonDialog').showModal()};
+function fantasyProductionMarkup(profile, games = null) {
+  const production = CourtsideFantasyAnalysis.production(profile?.history);
+  const projected = CourtsideFantasyAnalysis.baseline(production, games);
+  const display = value => value == null ? 'Unavailable' : Number(value).toFixed(1);
+  return `<div class="fantasy-production"><p class="eyebrow">${escapeHtml(production.season)} production</p><div><span>Fantasy PTS / game</span><strong>${display(production.points)}</strong></div><div><span>Minutes / game</span><strong>${display(production.minutes)}</strong></div><div><span>Games played</span><strong>${production.gamesPlayed ?? 'Unavailable'}</strong></div><div><span>Next 7 days: scheduled games</span><strong>${games ?? 'Unavailable'}</strong></div><div><span>7-day baseline projection</span><strong>${display(projected)}</strong></div></div>`;
+}
+async function addFantasyComparison(player, teamName, profile = null) {
+  const id = String(player.espnId || player.id);
+  const key = `${player.idProvider === 'nba' && !player.espnId ? 'nba' : 'espn'}:${id}`;
+  if (comparisonState.some(item => (item.comparisonKey || `espn:${item.espnId || item.id}`) === key)) return;
+  if (comparisonState.length >= 3) throw new Error('Comparison is full. Clear selected players to compare others.');
+  comparisonState.push({ ...player, id, teamName, profile, latest: profile?.history?.at(-1), comparisonKey: key });
+  updateCompareTray();
+}
+document.querySelector('#openComparison').onclick = async () => {
+  const request = ++comparisonRequest;
+  const root = document.querySelector('#comparisonContent');
+  const players = [...comparisonState];
+  root.innerHTML = '<h2 id="comparisonTitle">Player comparison</h2><p role="status">Loading fantasy production...</p>';
+  document.querySelector('#comparisonDialog').showModal();
+  const start = new Date();
+  const date = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+  const get = async url => { const response = await fetch(url); if (!response.ok) throw new Error('Unavailable'); return response.json(); };
+  const [schedule] = await Promise.all([
+    get(`/api/schedule?start=${date}&days=7`).catch(() => null),
+    Promise.all(players.map(async player => {
+      if (player.idProvider === 'nba' && !player.espnId) return;
+      try { player.profile = await get(`/api/players/${player.espnId || player.id}`); } catch (_) { player.profile = null; }
+    }))
+  ]);
+  // A closed/reopened dialog must not be replaced by an older comparison.
+  if (request !== comparisonRequest || !root.isConnected || !document.querySelector('#comparisonDialog').open || comparisonState.some((player,index) => player !== players[index]) || comparisonState.length !== players.length) return;
+  const labels = ['PTS','REB','AST','STL','BLK','TO'];
+  root.innerHTML = `<h2 id="comparisonTitle">Fantasy player comparison</h2><p class="muted">PTS + 1.2 REB + 1.5 AST + 3 STL + 3 BLK - TO. Production uses current regular-season averages. The 7-day baseline assumes the player appears in every remaining scheduled game, without role, matchup, or injury adjustments.</p><div class="comparison-grid">${players.map(player => {
+    const production = CourtsideFantasyAnalysis.production(player.profile?.history);
+    const currentTeam = player.teamCode || schedule?.days?.flatMap(day => (day.games || []).flatMap(game => [game.home,game.away])).find(team => team.displayName === player.teamName)?.abbreviation || Object.entries(teams).find(([,team]) => [team.city,team.name].filter(Boolean).join(' ') === player.teamName)?.[0];
+    const games = CourtsideFantasyAnalysis.scheduledGames(schedule, currentTeam);
+    const values = production.values;
+    return `<article>${player.headshot ? `<img src="${escapeHtml(player.headshot)}" alt="">` : ''}<h3>${escapeHtml(player.name)}</h3><p>${escapeHtml(player.teamName)} | ${escapeHtml(player.position)}</p>${fantasyProductionMarkup(player.profile,games)}${labels.map(label => `<div><span>${label} / game</span><strong>${escapeHtml(values?.[label] ?? (label === 'TO' ? values?.TOV : null) ?? 'Unavailable')}</strong></div>`).join('')}<p>Source: ESPN season averages. Small samples can be misleading; unavailable data is not zero.</p></article>`;
+  }).join('')}</div>`;
+};
 document.querySelector('#closeComparison').onclick=()=>document.querySelector('#comparisonDialog').close();
 
 function openTransactionDetail(item){if(!item)return;const root=document.querySelector('#transactionDetail');const proof=item.verification;root.innerHTML=`<p class="eyebrow">${escapeHtml(item.type)} · ${item.date?new Date(item.date).toLocaleDateString():'Date unavailable'}</p><h2 id="transactionDialogTitle">${escapeHtml(item.team.displayName)}</h2><div class="transaction-detail-head">${item.player?.headshot?`<img src="${escapeHtml(item.player.headshot)}" alt="">`:item.team.logo?`<img src="${escapeHtml(item.team.logo)}" alt="">`:''}<p>${escapeHtml(item.description)}</p></div>${item.contract?`<section class="profile-section"><h3>Contract terms</h3><p>${item.contract.years} year${item.contract.years===1?'':'s'} · ${money(item.contract.value)}${item.contract.details?` · ${escapeHtml(item.contract.details)}`:''}</p></section>`:''}<section class="profile-section"><h3>Verification</h3><p>${proof?`${escapeHtml(proof.status)} via ${escapeHtml(proof.source)}. ${escapeHtml(proof.detail)}`:'This move is shown from the linked league or reporting source.'}</p><a class="source-link" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open original source ↗</a></section>`;document.querySelector('#transactionDialog').showModal()}

@@ -8,6 +8,8 @@ It is built with JavaScript, HTML, CSS, and Node.js. You can run it locally or d
 
 The fantasy impact page lists players on the injury report. Each card shows the player's status, the reported injury details, and how many games their team has in the next seven days. Select **Explore possible replacements** to see available teammates listed at the same position.
 
+Replacement cards and player comparison show current-season fantasy points per game, minutes, and games played when ESPN supplies the required averages. Select two or three players using **Add to comparison**. The seven-day baseline projection multiplies fantasy points per game by remaining scheduled games; it assumes full participation and does not predict role changes, injuries, or matchup effects. Missing statistics or schedules are shown as unavailable. Scoring uses PTS + 1.2 REB + 1.5 AST + 3 STL + 3 BLK - TO, matching Courtside leagues.
+
 For example, if a guard is ruled out, the card can help you find other guards on the same team and see how often they play that week. Those players are only starting points for research: Courtside does not currently know who will receive extra minutes, predict their production, or check whether they are available in your fantasy league. Check the team's rotation and your league before adding anyone.
 
 ![Fantasy impact board showing injury reports and upcoming schedules](docs/screenshots/fantasy-impact-updated.png)
