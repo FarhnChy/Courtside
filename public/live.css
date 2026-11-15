@@ -455,11 +455,14 @@
 .impact-intro { padding: 22px; margin-bottom: 20px; }
 .impact-intro h2, .impact-card h2 { margin: 0 0 8px; }
 .impact-intro p { max-width: 760px; line-height: 1.5; }
-.impact-controls { display: flex; align-items: center; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
-.impact-controls label { font-weight: 700; }
-.impact-controls input { min-width: min(100%, 300px); }
+.impact-controls { display: flex; align-items: flex-end; gap: 12px; padding: 16px; margin: 20px 0; flex-wrap: wrap; }
+.impact-controls > div { flex: 1 1 180px; min-width: 0; }
+.impact-controls label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+.impact-controls input, .impact-controls select { width: 100%; min-width: 0; }
+.impact-card { display: flex; flex-direction: column; padding: 20px; }
+.impact-card .impact-schedule { margin-top: auto; }
+.impact-card .impact-replacements { width: 100%; }
 .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 16px; }
-.impact-card { padding: 20px; }
 .impact-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .impact-card p { line-height: 1.5; }
 .impact-schedule { padding: 12px 0; margin: 12px 0; border-top: 1px solid #53617455; border-bottom: 1px solid #53617455; }

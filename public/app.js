@@ -367,7 +367,7 @@ function awardRows(race) {
 function seedRows(conferenceId, label) {
   const conference = liveStandings.data?.conferences?.find(item => item.id === conferenceId);
   const rows = conference?.teams?.slice(0, 5) || [];
-  return `<section class="panel seed-race-card"><div class="panel-title"><div><p class="eyebrow">${label.toUpperCase()} CONFERENCE</p><h2>Current leaders</h2></div><span class="pill">Standings</span></div>${rows.length ? rows.map((team, index) => `<div class="seed-chance-row"><span class="standing-rank">${escapeHtml(team.seed || index + 1)}</span>${team.abbreviation ? logo(team.abbreviation,'mini-logo') : ''}<div><strong>${escapeHtml(team.displayName)}</strong><small>${escapeHtml(team.wins)}?${escapeHtml(team.losses)} ? ${escapeHtml(team.pct)} win pct</small></div></div>`).join('') : '<p class="muted">Standings unavailable. Refresh to try again.</p>'}</section>`;
+  return `<section class="panel seed-race-card"><div class="panel-title"><div><p class="eyebrow">${label.toUpperCase()} CONFERENCE</p><h2>Current leaders</h2></div><span class="pill">Standings</span></div>${rows.length ? rows.map((team, index) => `<div class="seed-chance-row"><span class="standing-rank">${escapeHtml(team.seed || index + 1)}</span>${team.abbreviation ? logo(team.abbreviation,'mini-logo') : ''}<div><strong>${escapeHtml(team.displayName)}</strong><small>${escapeHtml(team.wins)}-${escapeHtml(team.losses)} | ${escapeHtml(team.pct)} win pct</small></div></div>`).join('') : '<p class="muted">Standings unavailable. Refresh to try again.</p>'}</section>`;
 }
 // Manually verified snapshot; the linked NBA.com ladder may have newer rankings.
 const mvpLadderSnapshot = [
@@ -377,9 +377,37 @@ const mvpLadderSnapshot = [
   { player: 'Tyrese Maxey', id: '4431678', team: 'PHI', stats: '28.0 PPG | 3.8 RPG | 5.4 APG' },
   { player: 'Jayson Tatum', id: '4065648', team: 'BOS', stats: '27.0 PPG | 6.0 RPG | 7.9 APG' }
 ];
+const additionalAwardLadders = [
+  {
+    title: 'Rookie of the Year', date: 'Nov 11, 2026', label: 'NBA.com ladder',
+    description: 'Top four in the published Rookie Ladder. Saved snapshot; not live rankings.',
+    url: 'https://www.nba.com/news/kia-rookie-ladder-november-11-2026',
+    players: [
+      { rank: 1, player: 'Yaxel Lendeborg', team: 'GSW', stats: '21.4 PPG | 7.2 RPG | 4.0 APG' },
+      { rank: 2, player: 'Darius Acuff Jr.', team: 'SAC', stats: '26.2 PPG | 3.8 RPG | 7.3 APG' },
+      { rank: 3, player: 'Cameron Boozer', team: 'MEM', stats: '16.2 PPG | 9.7 RPG | 5.5 APG' },
+      { rank: 4, player: 'Darryn Peterson', team: 'UTA', stats: '15.7 PPG | 4.0 RPG | 3.8 APG' }
+    ]
+  },
+  {
+    title: 'Most Improved Player', date: 'Nov 3, 2026', label: 'Market watch',
+    description: 'Candidates ordered by the published market snapshot, with a shared third place. Not an official NBA ladder or a Courtside prediction.',
+    url: 'https://www.sportsbookreview.com/picks/nba/basketball-most-improved-player/',
+    players: [
+      { rank: 1, player: 'Ty Jerome', team: 'MEM', stats: 'Most Improved Player candidate' },
+      { rank: 2, player: 'Ajay Mitchell', team: 'OKC', stats: 'Most Improved Player candidate' },
+      { rank: 'T3', player: 'Brandon Miller', team: 'CHA', stats: 'Most Improved Player candidate' },
+      { rank: 'T3', player: 'Dylan Harper', team: 'SAS', stats: 'Most Improved Player candidate' },
+      { rank: 5, player: 'Jaden McDaniels', team: 'MIN', stats: 'Most Improved Player candidate' }
+    ]
+  }
+];
+function renderAdditionalAwardLadder(ladder) {
+  return `<section class="panel award-watch-card"><div class="panel-title"><div><p class="eyebrow">${escapeHtml(ladder.label)}</p><h2>${escapeHtml(ladder.title)}</h2></div><span class="pill">${escapeHtml(ladder.date)}</span></div><p class="muted">${escapeHtml(ladder.description)}</p>${ladder.players.map(player => `<div class="seed-chance-row"><span class="standing-rank">${escapeHtml(player.rank)}</span>${logo(player.team, 'mini-logo')}<div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}<a class="source-link" href="${escapeHtml(ladder.url)}" target="_blank" rel="noreferrer">Read source and rankings</a></section>`;
+}
 function renderFutures(){
   const root=document.querySelector('#futuresGrid');
-  root.innerHTML=`<section class="demo-disclosure futures-disclosure"><strong>Rankings and standings, not odds</strong><span>The MVP table is a dated NBA.com editorial ladder, not a probability of winning. Conference leaders show current ESPN standings, not forecasts.</span><span>${sourceBadge('ESPN standings',liveStandings.updatedAt,'Standings')}</span></section><section class="panel award-race-card awards-sources"><div class="panel-title"><div><p class="eyebrow">AWARDS RACE</p><h2>MVP ladder</h2></div><span class="pill">Nov 6, 2026 snapshot</span></div><p>NBA.com&#39;s top five at publication. Rankings and stats are a manually saved snapshot and do not update automatically.</p><div class="mvp-ladder">${mvpLadderSnapshot.map((player,index) => `<div class="seed-chance-row"><span class="standing-rank">${index + 1}</span><img class="mvp-headshot" src="${escapeHtml(espnHeadshot(player.id))}" alt=""><div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}</div><a class="source-link" href="https://www.nba.com/news/kia-mvp-ladder-nov-6-2026" target="_blank" rel="noreferrer">Read the Nov 6 ladder</a><a class="source-link" href="https://www.nba.com/news/category/kia-race-to-the-mvp-ladder" target="_blank" rel="noreferrer">Latest MVP ladders</a><p>Other award ladders are not yet available in Courtside. <a href="https://www.espn.com/nba/" target="_blank" rel="noreferrer">Follow ESPN NBA coverage</a></p></section>${seedRows('east','East')}${seedRows('west','West')}`;
+  root.innerHTML=`<section class="demo-disclosure futures-disclosure"><strong>Rankings and standings, not odds</strong><span>Award lists are dated snapshots with sources below. Conference leaders use current ESPN standings.</span><span>${sourceBadge('ESPN standings',liveStandings.updatedAt,'Standings')}</span></section><section class="panel award-race-card awards-sources"><div class="panel-title"><div><p class="eyebrow">AWARDS RACE</p><h2>MVP ladder</h2></div><span class="pill">Nov 6, 2026 snapshot</span></div><p>NBA.com&#39;s top five at publication. Rankings and stats are a manually saved snapshot and do not update automatically.</p><div class="mvp-ladder">${mvpLadderSnapshot.map((player,index) => `<div class="seed-chance-row"><span class="standing-rank">${index + 1}</span><img class="mvp-headshot" src="${escapeHtml(espnHeadshot(player.id))}" alt=""><div><strong>${escapeHtml(player.player)}</strong><small>${escapeHtml(player.team)} | ${escapeHtml(player.stats)}</small></div></div>`).join('')}</div><a class="source-link" href="https://www.nba.com/news/kia-mvp-ladder-nov-6-2026" target="_blank" rel="noreferrer">Read the Nov 6 ladder</a><a class="source-link" href="https://www.nba.com/news/category/kia-race-to-the-mvp-ladder" target="_blank" rel="noreferrer">Latest MVP ladders</a></section>${additionalAwardLadders.map(renderAdditionalAwardLadder).join('')}${seedRows('east','East')}${seedRows('west','West')}`;
 }
 const viewRoutes = { fantasy:'fantasyImpact', scores:'scores', schedule:'scheduleView', standings:'standings', teams:'teamsView', injuries:'injuriesView', moves:'transactionsView', finance:'teamsView', 'free-agents':'freeAgentsView', predict:'predict', futures:'futures' };
 const routeForView = viewId => Object.entries(viewRoutes).find(([,id]) => id === viewId)?.[0] || 'fantasy';
@@ -956,8 +984,53 @@ const searchDialog=document.querySelector('#searchDialog');
 document.querySelector('#searchButton').onclick=()=>{searchDialog.showModal();setTimeout(()=>document.querySelector('#globalSearchInput').focus(),0)};
 document.querySelector('#closeSearch').onclick=()=>searchDialog.close();
 searchDialog.onclick=event=>{if(event.target===searchDialog)searchDialog.close()};
-document.querySelector('#globalSearchInput').oninput=event=>{clearTimeout(searchTimer);const query=event.target.value.trim();const root=document.querySelector('#searchResults');if(query.length<2){root.innerHTML='<div class="empty-state compact-empty">Enter at least two characters.</div>';return}root.innerHTML='<div class="empty-state compact-empty">Searching players, teams, and games…</div>';searchTimer=setTimeout(async()=>{try{const response=await fetch(`/api/search?q=${encodeURIComponent(query)}`);if(!response.ok)throw new Error();const payload=await response.json();root.innerHTML=payload.results.length?payload.results.map((item,index)=>`<button class="search-result" data-search-index="${index}">${item.logo||item.headshot?`<img src="${escapeHtml(item.logo||item.headshot)}" alt="">`:'<span class="search-icon">⌕</span>'}<span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.subtitle)}</small></span><em>${escapeHtml(item.kind)}</em></button>`).join(''):'<div class="empty-state compact-empty">No matching players, teams, or games.</div>';root.querySelectorAll('[data-search-index]').forEach(button=>button.onclick=()=>{const item=payload.results[Number(button.dataset.searchIndex)];searchDialog.close();if(item.kind==='team')openTeamRoster(item.id);else if(item.kind==='player')openPlayerProfile(item.id,{id:item.id,idProvider:item.idProvider,espnId:item.espnId,stats:item.stats,name:item.name,position:item.position,headshot:item.headshot},item.teamName);else{activateView('scores');const game=games.find(game=>String(game.id)===String(item.id));if(game){selected=game;renderCards();loadGame(game.id)}}})}catch(_){root.innerHTML='<div class="empty-state compact-empty">Search is temporarily unavailable. Try again.</div>'}},250)};
-
+const searchResultsCache = new Map();
+let searchRequest = 0;
+let searchController = null;
+function renderSearchResults(results) {
+  const root = document.querySelector('#searchResults');
+  root.innerHTML = results.length ? results.map((item, index) => `<button class="search-result" data-search-index="${index}">${item.logo || item.headshot ? `<img src="${escapeHtml(item.logo || item.headshot)}" alt="" loading="lazy">` : '<span class="search-icon" aria-hidden="true">&#8981;</span>'}<span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.subtitle)}</small></span><em>${escapeHtml(item.kind)}</em></button>`).join('') : '<div class="empty-state compact-empty">No matching players, teams, or games.</div>';
+  root.querySelectorAll('[data-search-index]').forEach(button => button.onclick = () => {
+    const item = results[Number(button.dataset.searchIndex)];
+    searchDialog.close();
+    if (item.kind === 'team') return openTeamRoster(item.id);
+    if (item.kind === 'player') return openPlayerProfile(item.id, { id:item.id, idProvider:item.idProvider, espnId:item.espnId, stats:item.stats, name:item.name, position:item.position, headshot:item.headshot }, item.teamName);
+    activateView('scores');
+    const game = games.find(game => String(game.id) === String(item.id));
+    if (game) { selected = game; renderCards(); loadGame(game.id); }
+  });
+}
+document.querySelector('#globalSearchInput').oninput = event => {
+  clearTimeout(searchTimer);
+  searchController?.abort();
+  const request = ++searchRequest;
+  const query = event.target.value.trim();
+  const key = query.toLowerCase();
+  const root = document.querySelector('#searchResults');
+  if (query.length < 2 || query.length > 60) {
+    root.innerHTML = '<div class="empty-state compact-empty">Enter 2 to 60 characters.</div>';
+    return;
+  }
+  const cached = searchResultsCache.get(key);
+  if (cached && Date.now() - cached.time < 60000) { renderSearchResults(cached.results); return; }
+  root.innerHTML = '<div class="empty-state compact-empty">Searching players, teams, and games...</div>';
+  searchTimer = setTimeout(async () => {
+    const controller = new AbortController();
+    searchController = controller;
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal:controller.signal });
+      if (!response.ok) throw new Error('Search unavailable');
+      const payload = await response.json();
+      if (request !== searchRequest) return;
+      if (searchResultsCache.size >= 50) searchResultsCache.delete(searchResultsCache.keys().next().value);
+      searchResultsCache.set(key, { time:Date.now(), results:payload.results });
+      renderSearchResults(payload.results);
+    } catch (error) {
+      if (error.name !== 'AbortError' && request === searchRequest) root.innerHTML = '<div class="empty-state compact-empty">Search is temporarily unavailable. Try again.</div>';
+    }
+  }, 150);
+};
+searchDialog.addEventListener('close', () => { clearTimeout(searchTimer); searchController?.abort(); searchRequest++; });
 async function renderFavoriteDashboard() {
   if (window.CourtsideFeatures) return window.CourtsideFeatures.favorite();
 }
@@ -984,5 +1057,5 @@ function renderRecap(summary) {
     return index < 0 ? [] : section.athletes.filter(player => !player.didNotPlay).map(player => ({name:player.name, team:group.team.abbreviation, points:Number(player.stats[index])}));
   })).filter(player => Number.isFinite(player.points)).sort((a,b)=>b.points-a.points).slice(0,3);
   const keyPlays = (summary.plays || []).filter(play => play.scoring && play.period >= 4).slice(0,5);
-  return `<section class="recap"><h3>Game at a glance</h3><p>${escapeHtml(selected.away)} ${escapeHtml(selected.as)} ? ${escapeHtml(selected.home)} ${escapeHtml(selected.hs)} ? Final</p><h3>Leading players</h3><div class="recap-leaders">${leaders.map(player=>`<article><strong>${escapeHtml(player.name)}</strong><span>${escapeHtml(player.team)} ? ${player.points} PTS</span></article>`).join('') || '<p>Player stats unavailable.</p>'}</div><h3>Key plays ? late scoring</h3>${renderPlayByPlay(keyPlays)}<p class="muted">Quarter breakdown above. Key plays show the latest available fourth-quarter and overtime scoring plays.</p></section>`;
+  return `<section class="recap"><h3>Game at a glance</h3><p>${escapeHtml(selected.away)} ${escapeHtml(selected.as)} &ndash; ${escapeHtml(selected.home)} ${escapeHtml(selected.hs)} | Final</p><h3>Leading players</h3><div class="recap-leaders">${leaders.map(player=>`<article><strong>${escapeHtml(player.name)}</strong><span>${escapeHtml(player.team)} | ${player.points} PTS</span></article>`).join('') || '<p>Player stats unavailable.</p>'}</div><h3>Key plays: late scoring</h3>${renderPlayByPlay(keyPlays)}<p class="muted">Quarter breakdown above. Key plays show the latest available fourth-quarter and overtime scoring plays.</p></section>`;
 }

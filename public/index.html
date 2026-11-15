@@ -43,9 +43,15 @@
 
     <section id="fantasyImpact" class="view active-view">
       <div class="section-heading"><div><p class="eyebrow">YOUR FANTASY EDGE</p><h1>Fantasy impact</h1><p class="muted">Turn NBA availability and upcoming games into decisions for your roster.</p></div><button class="refresh-button" id="refreshImpact" type="button">Refresh</button></div>
-      <section class="panel impact-intro"><h2>Who could see an opportunity?</h2><p>Check an injury, see the team?s next seven days, and explore healthy teammates at the same position. Confirm the rotation and your league?s waiver availability before adding anyone.</p><p class="muted" id="impactSources" role="status">Loading injury and schedule data?</p></section>
-      <div class="impact-controls"><label for="impactSearch">Find a player or team</label><input id="impactSearch" class="team-picker" type="search" placeholder="Search injuries"></div>
-      <div id="impactBoard" class="impact-grid" aria-live="polite"><div class="panel empty-state">Loading fantasy impact?</div></div>
+      <section class="panel impact-intro"><h2>Find the news that affects your lineup</h2><p>Review availability, check the next seven days, then explore same-position teammates. Confirm their rotation role and availability in your league before making a move.</p><p class="muted" id="impactSources" role="status">Loading injury and schedule data...</p></section>
+      <div class="panel impact-controls">
+        <div><label for="impactSearch">Player or team</label><input id="impactSearch" class="team-picker" type="search" placeholder="Search name, team, or injury"></div>
+        <div><label for="impactStatus">Availability</label><select id="impactStatus" class="team-picker"><option value="all">All statuses</option><option value="out">Out / injured reserve</option><option value="doubtful">Doubtful</option><option value="questionable">Questionable / day-to-day</option><option value="probable">Probable</option></select></div>
+        <div><label for="impactTeam">Team</label><select id="impactTeam" class="team-picker"><option value="all">All teams</option></select></div>
+        <button id="clearImpactFilters" class="secondary-action" type="button">Clear filters</button>
+      </div>
+      <p id="impactCount" class="muted" role="status"></p>
+      <div id="impactBoard" class="impact-grid"><div class="panel empty-state">Loading fantasy impact...</div></div>
     </section>
 
     <section id="scores" class="view">

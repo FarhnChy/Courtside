@@ -17,6 +17,7 @@ const offseasonReportedTransactions = require('./data/offseasonReportedTransacti
 const root = path.join(__dirname, 'public');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png' };
 let searchCache = null;
+let searchPending = null;
 
 function json(res, status, body) {
   const cacheControl = status === 200 && res.courtsideCacheSeconds
@@ -234,8 +235,20 @@ async function transactionsWithRosterReconciliation() {
 
 async function searchableDirectory() {
   if (searchCache && Date.now() - searchCache.time < 600_000) return searchCache.items;
-  const [directory, market, board] = await Promise.all([espn.teamsList(), finance.freeAgents().catch(()=>({players:[]})), espn.scoreboard().catch(()=>({games:[]}))]);
-  const rosters = await Promise.all(directory.teams.map(async team => { try { return await espn.roster(team.id); } catch (_) { return null; } }));
+  if (searchPending) return searchPending;
+  searchPending = buildSearchDirectory().finally(() => { searchPending = null; });
+  return searchPending;
+}
+
+async function buildSearchDirectory() {
+  const directoryPromise = espn.teamsList();
+  const rostersPromise = directoryPromise.then(directory => Promise.all(directory.teams.map(async team => {
+    try { return await espn.roster(team.id, { includeCoaches: false }); } catch (_) { return null; }
+  })));
+  const [directory, market, board, rosters] = await Promise.all([
+    directoryPromise, finance.freeAgents().catch(()=>({players:[]})),
+    espn.scoreboard().catch(()=>({games:[]})), rostersPromise
+  ]);
   const players = new Map();
   for (const roster of rosters.filter(Boolean)) for (const player of roster.players) players.set(String(player.id), { kind:'player', id:player.id, name:player.name, subtitle:`${roster.team.displayName} · ${player.position}`, headshot:player.headshot, teamName:roster.team.displayName, position:player.position });
   const rosterNames=new Set([...players.values()].map(player=>player.name.toLowerCase()));

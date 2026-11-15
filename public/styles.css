@@ -1048,12 +1048,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 }
 .seed-chance-row {
   display: grid;
-  grid-template-columns: 34px minmax(0,1fr) 48px;
+  grid-template-columns: 24px 32px minmax(0,1fr);
   align-items: center;
   gap: 11px;
   padding: 12px 0;
   border-top: 1px solid var(--line);
 }
+.award-watch-card { min-width: 0; }
+.award-watch-card .panel-title { flex-wrap: wrap; gap: 10px; }
+.award-watch-card > p { line-height: 1.6; }
+.seed-chance-row small { display: block; color: var(--muted); line-height: 1.5; }
 .seed-chance-row img {
   width: 32px;
   height: 32px;
