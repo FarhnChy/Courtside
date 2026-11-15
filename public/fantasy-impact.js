@@ -78,7 +78,7 @@
           const index = Number(control.dataset.candidateCompare);
           try {
             await addFantasyComparison({ ...candidates[index], teamCode: team.abbreviation }, team.displayName, details[index]);
-            control.textContent = 'Selected'; control.disabled = true;
+            control.textContent = 'Selected';
             result.querySelector('.impact-compare-status').textContent = 'Player selected. Use the comparison bar to compare two or three players.';
           } catch (error) { result.querySelector('.impact-compare-status').textContent = error.message; }
         });
@@ -88,6 +88,7 @@
   async function load() {
     refresh.disabled = true;
     rosters.clear();
+    profiles.clear();
     count.textContent = '';
     board.innerHTML = '<div class="panel empty-state">Loading fantasy impact…</div>';
     sources.textContent = 'Loading injury and schedule data…';

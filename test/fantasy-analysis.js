@@ -48,6 +48,7 @@ async function run() {
   await ui.addFantasyComparison({ id: '1', name: 'Player One', teamCode: 'BOS', position: 'G' }, 'Boston Celtics');
   await ui.addFantasyComparison({ id: '2', name: 'Player Two', teamCode: 'BOS', position: 'F' }, 'Boston Celtics');
   await node('#openComparison').onclick();
+  assert.equal(vm.runInContext('comparisonState[0].profile', ui), null, 'comparison fetches must not mutate shared selection objects');
   assert.match(node('#comparisonContent').innerHTML, /Fantasy player comparison/);
   assert.match(node('#comparisonContent').innerHTML, /Player One/);
   assert.match(node('#comparisonContent').innerHTML, /7-day baseline projection/);

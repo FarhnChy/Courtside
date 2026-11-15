@@ -396,8 +396,8 @@ const additionalAwardLadders = [
     players: [
       { rank: 1, player: 'Ty Jerome', team: 'MEM', stats: 'Most Improved Player candidate' },
       { rank: 2, player: 'Ajay Mitchell', team: 'OKC', stats: 'Most Improved Player candidate' },
-      { rank: 'T3', player: 'Brandon Miller', team: 'CHA', stats: 'Most Improved Player candidate' },
-      { rank: 'T3', player: 'Dylan Harper', team: 'SAS', stats: 'Most Improved Player candidate' },
+      { rank: 3, player: 'Brandon Miller', team: 'CHA', stats: 'Tied for third | Most Improved Player candidate' },
+      { rank: 3, player: 'Dylan Harper', team: 'SAS', stats: 'Tied for third | Most Improved Player candidate' },
       { rank: 5, player: 'Jaden McDaniels', team: 'MIN', stats: 'Most Improved Player candidate' }
     ]
   }
@@ -531,9 +531,9 @@ function summaryTabs(summary, active = 'box') {
   const finalGame = game.status === 'FINAL';
   const awayWon = finalGame && Number(game.as) > Number(game.hs);
   const homeWon = finalGame && Number(game.hs) > Number(game.as);
-  const lineScore = lineTeams.length===2 ? `<div class="table-scroll"><table class="line-score"><caption class="sr-only">Quarter by quarter scoring</caption><thead><tr><th>Team</th>${Array.from({length:periods},(_,i)=>`<th>${i<4?i+1:`OT${i-3}`}</th>`).join('')}<th>T</th></tr></thead><tbody>${lineTeams.map((team,index)=>`<tr><td>${escapeHtml(team.abbreviation)}</td>${Array.from({length:periods},(_,i)=>`<td>${team.lineScores?.[i]?.value??'—'}</td>`).join('')}<td><strong class="${index===0&&awayWon||index===1&&homeWon?'winning-score':''}">${team.score}</strong></td></tr>`).join('')}</tbody></table></div>`:'';
+  const lineScore = lineTeams.length===2 ? `<div class="table-scroll"><table class="line-score"><caption class="sr-only">Quarter by quarter scoring</caption><thead><tr><th>Team</th>${Array.from({length:periods},(_,i)=>`<th>${i<4?i+1:`OT${i-3}`}</th>`).join('')}<th>T</th></tr></thead><tbody>${lineTeams.map((team,index)=>`<tr><td>${escapeHtml(team.abbreviation)}</td>${Array.from({length:periods},(_,i)=>`<td>${team.lineScores?.[i]?.value??'—'}</td>`).join('')}<td><strong class="${index===0&&awayWon||index===1&&homeWon?'winning-score':''}">${game.status === 'UPCOMING' ? '&mdash;' : escapeHtml(team.score ?? '—')}</strong></td></tr>`).join('')}</tbody></table></div>`:'';
   const context = [game.raw?.venue,...(game.raw?.broadcasts||[])].filter(Boolean).join(' · ');
-  document.querySelector('#gameCenter').innerHTML = `<div class="panel-title"><div><h2>${escapeHtml(game.away)} at ${escapeHtml(game.home)}</h2>${context?`<p class="game-context">${escapeHtml(context)}</p>`:''}</div><span class="pill">${escapeHtml(game.detail)}</span></div><div class="game-scoreboard compact"><button class="big-team summary-team-link" data-summary-team="${escapeHtml(teams[game.away]?.id||'')}">${logo(game.away,'team-logo big-logo')}<strong>${escapeHtml(teams[game.away].name)}</strong></button><div class="score-main"><span class="${awayWon?'winning-score':''}">${game.as}</span><small>–</small><span class="${homeWon?'winning-score':''}">${game.hs}</span></div><button class="big-team summary-team-link" data-summary-team="${escapeHtml(teams[game.home]?.id||'')}">${logo(game.home,'team-logo big-logo')}<strong>${escapeHtml(teams[game.home].name)}</strong></button></div>${lineScore}<div class="tabs">${finalGame?button('recap','Game recap'):''}${button('box','Box score')}${button('stats','Team stats')}${button('plays','Play-by-play')}</div><div class="summary-content">${content}</div>`;
+  document.querySelector('#gameCenter').innerHTML = `<div class="panel-title"><div><h2>${escapeHtml(game.away)} at ${escapeHtml(game.home)}</h2>${context?`<p class="game-context">${escapeHtml(context)}</p>`:''}</div><span class="pill">${escapeHtml(game.detail)}</span></div><div class="game-scoreboard compact"><button class="big-team summary-team-link" data-summary-team="${escapeHtml(teams[game.away]?.id||'')}">${logo(game.away,'team-logo big-logo')}<strong>${escapeHtml(teams[game.away].name)}</strong></button><div class="score-main"><span class="${awayWon?'winning-score':''}">${game.status === 'UPCOMING' ? '&mdash;' : escapeHtml(game.as ?? '—')}</span><small>–</small><span class="${homeWon?'winning-score':''}">${game.status === 'UPCOMING' ? '&mdash;' : escapeHtml(game.hs ?? '—')}</span></div><button class="big-team summary-team-link" data-summary-team="${escapeHtml(teams[game.home]?.id||'')}">${logo(game.home,'team-logo big-logo')}<strong>${escapeHtml(teams[game.home].name)}</strong></button></div>${game.status === 'UPCOMING' ? '<p class="muted" role="status">Waiting for game to start</p>' : ''}${lineScore}<div class="tabs">${finalGame?button('recap','Game recap'):''}${button('box','Box score')}${button('stats','Team stats')}${button('plays','Play-by-play')}</div><div class="summary-content">${content}</div>`;
   document.querySelectorAll('[data-summary-tab]').forEach(el => el.onclick = () => summaryTabs(summary, el.dataset.summaryTab));
   document.querySelectorAll('[data-summary-team]').forEach(el=>el.onclick=()=>{if(el.dataset.summaryTeam)openTeamRoster(el.dataset.summaryTeam)});
   document.querySelectorAll('.box-player[data-player-id]').forEach(button => {
@@ -1085,7 +1085,8 @@ async function addFantasyComparison(player, teamName, profile = null) {
 document.querySelector('#openComparison').onclick = async () => {
   const request = ++comparisonRequest;
   const root = document.querySelector('#comparisonContent');
-  const players = [...comparisonState];
+  const selection = [...comparisonState];
+  const players = selection.map(player => ({ ...player }));
   root.innerHTML = '<h2 id="comparisonTitle">Player comparison</h2><p role="status">Loading fantasy production...</p>';
   document.querySelector('#comparisonDialog').showModal();
   const start = new Date();
@@ -1099,7 +1100,7 @@ document.querySelector('#openComparison').onclick = async () => {
     }))
   ]);
   // A closed/reopened dialog must not be replaced by an older comparison.
-  if (request !== comparisonRequest || !root.isConnected || !document.querySelector('#comparisonDialog').open || comparisonState.some((player,index) => player !== players[index]) || comparisonState.length !== players.length) return;
+  if (request !== comparisonRequest || !root.isConnected || !document.querySelector('#comparisonDialog').open || comparisonState.some((player,index) => player !== selection[index]) || comparisonState.length !== selection.length) return;
   const labels = ['PTS','REB','AST','STL','BLK','TO'];
   root.innerHTML = `<h2 id="comparisonTitle">Fantasy player comparison</h2><p class="muted">PTS + 1.2 REB + 1.5 AST + 3 STL + 3 BLK - TO. Production uses current regular-season averages. The 7-day baseline assumes the player appears in every remaining scheduled game, without role, matchup, or injury adjustments.</p><div class="comparison-grid">${players.map(player => {
     const production = CourtsideFantasyAnalysis.production(player.profile?.history);
