@@ -14,7 +14,7 @@
   const safe = value => escapeHtml(value);
   const portrait = (name, headshot) => `<span class="impact-portrait" aria-hidden="true"><span class="impact-portrait-fallback">${safe(String(name || '?').trim().split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase())}</span>${headshot ? `<img src="${safe(headshot)}" alt="" loading="lazy">` : ''}</span>`;
   board.addEventListener('error', event => { if (event.target.matches('.impact-portrait img')) event.target.remove(); }, true);
-  const get = async url => { const response = await fetch(url); if (!response.ok) throw new Error('Unavailable'); return response.json(); };
+  const get = async url => { const response = globalThis.courtsideDemoResponse?.(url) ?? await fetch(url); if (!response.ok) throw new Error('Unavailable'); return response.json(); };
   const normalized = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   function statusGroup(status) {
     const value = normalized(status);

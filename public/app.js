@@ -739,7 +739,8 @@ async function openPlayerProfile(id, playerOverride = null, teamOverride = '') {
     return;
   }
   try {
-    const response = await fetchApi(`/api/players/${player.espnId || id}`); if (!response.ok) throw new Error('Profile unavailable'); const profile=await response.json();
+    const url = `/api/players/${player.espnId || id}`;
+    const response = globalThis.courtsideDemoResponse?.(url) ?? await fetchApi(url); if (!response.ok) throw new Error('Profile unavailable'); const profile=await response.json();
     const history = profile.history || []; const latest = history[history.length-1]; const detailedPlayer={...player,position:profile.positions||player.position}; const detailedHeader=playerProfileHeader(detailedPlayer,teamName); currentProfileCandidate={...detailedPlayer,id,teamName,profile,latest};
     root.innerHTML = `${detailedHeader}${typeof CourtsideFantasyAnalysis !== 'undefined' ? fantasyProductionMarkup(profile) : ''}${history.length ? renderProfileHistory(history) : profileFallbackStats(player)}${renderAwards(profile.awards)}`;
   } catch(error) { root.innerHTML = `${header}${profileFallbackStats(player)}`; }
@@ -1091,7 +1092,8 @@ document.querySelector('#openComparison').onclick = async () => {
   document.querySelector('#comparisonDialog').showModal();
   const start = new Date();
   const date = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-  const get = async url => { const response = await fetch(url); if (!response.ok) throw new Error('Unavailable'); return response.json(); };
+  const demo = players.every(player => player.profile?.source === 'Fictional demo data') ? window.courtsideDemoResponse : null;
+  const get = async url => { const response = demo?.(url) ?? await fetch(url); if (!response.ok) throw new Error('Unavailable'); return response.json(); };
   const [schedule] = await Promise.all([
     get(`/api/schedule?start=${date}&days=7`).catch(() => null),
     Promise.all(players.map(async player => {
@@ -1107,7 +1109,8 @@ document.querySelector('#openComparison').onclick = async () => {
     const currentTeam = player.teamCode || schedule?.days?.flatMap(day => (day.games || []).flatMap(game => [game.home,game.away])).find(team => team.displayName === player.teamName)?.abbreviation || Object.entries(teams).find(([,team]) => [team.city,team.name].filter(Boolean).join(' ') === player.teamName)?.[0];
     const games = CourtsideFantasyAnalysis.scheduledGames(schedule, currentTeam);
     const values = production.values;
-    return `<article>${player.headshot ? `<img src="${escapeHtml(player.headshot)}" alt="">` : ''}<h3>${escapeHtml(player.name)}</h3><p>${escapeHtml(player.teamName)} | ${escapeHtml(player.position)}</p>${fantasyProductionMarkup(player.profile,games)}${labels.map(label => `<div><span>${label} / game</span><strong>${escapeHtml(values?.[label] ?? (label === 'TO' ? values?.TOV : null) ?? 'Unavailable')}</strong></div>`).join('')}<p>Source: ESPN season averages. Small samples can be misleading; unavailable data is not zero.</p></article>`;
+    const source = player.profile?.source === 'Fictional demo data' ? 'Fictional demo data' : 'ESPN season averages';
+    return `<article>${player.headshot ? `<img src="${escapeHtml(player.headshot)}" alt="">` : ''}<h3>${escapeHtml(player.name)}</h3><p>${escapeHtml(player.teamName)} | ${escapeHtml(player.position)}</p>${fantasyProductionMarkup(player.profile,games)}${labels.map(label => `<div><span>${label} / game</span><strong>${escapeHtml(values?.[label] ?? (label === 'TO' ? values?.TOV : null) ?? 'Unavailable')}</strong></div>`).join('')}<p>Source: ${source}. Small samples can be misleading; unavailable data is not zero.</p></article>`;
   }).join('')}</div>`;
 };
 document.querySelector('#closeComparison').onclick=()=>document.querySelector('#comparisonDialog').close();

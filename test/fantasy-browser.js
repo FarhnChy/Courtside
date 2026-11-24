@@ -21,6 +21,10 @@ async function run() {
   });
   const server = http.createServer((req, res) => {
     const route = new URL(req.url, 'http://localhost').pathname;
+    if (route.startsWith('/api/') && !route.startsWith('/api/fantasy/')) {
+      res.writeHead(503);
+      return res.end('Live feed disabled in browser tests');
+    }
     return route.startsWith('/api/fantasy/') ? handler(req, res, route) : requestHandler(req, res);
   });
   let browser, socket;
@@ -74,6 +78,27 @@ async function run() {
       return { sessionId, evaluate, wait, navigate: url => send('Page.navigate', { url }, sessionId) };
     }
     const owner = await page(); const friend = await page(true);
+    for (const target of [owner, friend]) {
+      await target.navigate(`${base}/?demo=1#fantasy`);
+      await target.wait('document.querySelector("#impactBoard")?.textContent.includes("Alex Morgan")');
+      assert.equal(await target.evaluate('document.querySelector("#impactDemo").hidden'), false);
+      await target.evaluate(`(() => {
+        const filter = document.querySelector('#impactStatus');
+        filter.value = 'out';
+        filter.dispatchEvent(new Event('change'));
+      })()`);
+      assert.equal(await target.evaluate('document.querySelector("#impactCount").textContent.startsWith("1 of 2")'), true);
+      assert.equal(await target.evaluate('document.querySelector("#impactBoard").textContent.includes("3 upcoming games")'), true);
+      await target.evaluate('document.querySelector(".impact-replacements").click()');
+      await target.wait('document.querySelectorAll("[data-candidate-compare]").length === 2');
+      await target.evaluate('document.querySelectorAll("[data-candidate-compare]").forEach(button => button.click())');
+      await target.evaluate('document.querySelector("#openComparison").click()');
+      await target.wait('document.querySelector(".comparison-grid")?.children.length === 2');
+      const comparison = await target.evaluate('document.querySelector(".comparison-grid").textContent');
+      for (const expected of ['Jordan Reed', 'Casey Brooks', '81.9', '75.3', 'Fictional demo data']) assert.ok(comparison.includes(expected), expected);
+      assert.equal(await target.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    }
+    console.log('Sample-data demo verified on desktop and mobile with live feeds disabled');
     await owner.navigate(`${base}/fantasy.html`); await owner.wait('document.querySelector("#createLeague") && document.querySelector("#fantasyNotice").textContent.includes("saved on this server")');
     await owner.evaluate(`(() => { const form = document.querySelector('#createLeague'); form.elements.name.value = 'Browser Friends'; form.elements.teamName.value = 'Home Team'; form.elements.capacity.value = '2'; form.elements.draftSeconds.value = '120'; form.elements.rosterSize.value = '6'; form.elements.starters.value = '3'; form.requestSubmit(); })()`);
     await owner.wait('document.querySelector("#recoveryDialog").open');

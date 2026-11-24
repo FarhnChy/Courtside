@@ -44,6 +44,11 @@
     <section id="fantasyImpact" class="view active-view">
       <div class="section-heading"><div><p class="eyebrow">YOUR FANTASY EDGE</p><h1>Fantasy impact</h1><p class="muted">Turn NBA availability and upcoming games into decisions for your roster.</p></div><button class="refresh-button" id="refreshImpact" type="button">Refresh</button></div>
       <section class="panel impact-intro"><h2>Find the news that affects your lineup</h2><p>Review availability, check the next seven days, then explore same-position teammates. Confirm their rotation role and availability in your league before making a move.</p><p class="muted" id="impactSources" role="status">Loading injury and schedule data...</p></section>
+      <section class="panel impact-intro" id="impactDemo" hidden>
+        <h2>Sample-data demo</h2>
+        <details><summary>Walk through an injury and compare two players</summary><p>Find Alex Morgan, check Boston's upcoming games, then explore possible replacements. Add Jordan Reed and Casey Brooks to the comparison and select <strong>Compare</strong>.</p></details>
+        <p>The injuries, schedules, and player statistics in this walkthrough are fictional. <a href="./#fantasy">Open Fantasy impact with live feeds</a>.</p>
+      </section>
       <div class="panel impact-controls">
         <div><label for="impactSearch">Player or team</label><input id="impactSearch" class="team-picker" type="search" placeholder="Search name, team, or injury"></div>
         <div><label for="impactStatus">Availability</label><select id="impactStatus" class="team-picker"><option value="all">All statuses</option><option value="out">Out / injured reserve</option><option value="doubtful">Doubtful</option><option value="questionable">Questionable / day-to-day</option><option value="probable">Probable</option></select></div>
@@ -135,6 +140,7 @@
   <dialog id="playerDialog" class="player-dialog" aria-labelledby="playerDialogTitle"><button class="dialog-close" id="closePlayerDialog" aria-label="Close player profile">×</button><div id="playerProfile"></div></dialog>
   <footer>COURTSIDE LABS <span>Independent basketball analytics concept · Not affiliated with the NBA or ESPN</span></footer>
   <script src="fantasy-analysis.js"></script>
+  <script src="fantasy-demo.js"></script>
   <script src="app.js"></script>
   <script src="features.js"></script>
   <script src="pinned-score.js"></script>

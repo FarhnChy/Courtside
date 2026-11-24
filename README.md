@@ -4,6 +4,21 @@ Courtside is a basketball website for following NBA games and managing a fantasy
 
 It is built with JavaScript, HTML, CSS, and Node.js. You can run it locally or deploy it to Vercel.
 
+## Try Courtside
+
+[Open the live Courtside app](https://courtside-nba-stat-tracking.vercel.app/#fantasy). No account is needed for Fantasy impact. Open an injury card, check the team's next seven days, and look for same-position teammates under **Explore possible replacements**.
+
+For a repeatable walkthrough, [run Courtside locally](#run-locally) and [open the sample-data demo](http://localhost:3000/?demo=1#fantasy). Find Alex Morgan, confirm Boston has three upcoming games, and compare Jordan Reed and Casey Brooks. The demo uses fictional injuries, schedules, and player statistics.
+
+## Testing results
+
+| Automated check | Behavior covered |
+| --- | --- |
+| `npm test` | All 12 test scripts passed, covering injury filters, search request ordering, fantasy scoring, league isolation, concurrent drafting, and saved roster data. |
+| `node test/fantasy-browser.js` | Passed in Edge at desktop and mobile widths. With live feeds disabled, the walkthrough displayed three upcoming games and baseline projections of 81.9 for Jordan Reed and 75.3 for Casey Brooks. The suite also verified private league creation, drafting, lineup changes, trades, and recovery. |
+
+Participant usability results have yet to be recorded for this release. The [usability test guide](docs/usability-testing.md) defines the tasks and what to record.
+
 ## Fantasy impact
 
 The fantasy impact page lists players on the injury report. Each card shows the player's status, the reported injury details, and how many games their team has in the next seven days. Select **Explore possible replacements** to see available teammates listed at the same position.
@@ -65,8 +80,8 @@ For a guided explanation of the code and examples you can use to describe the pr
 Requires Node.js 18 or newer.
 
 ```sh
-git clone https://github.com/FarhnChy/Courtside-nba-stat-tracking.git
-cd Courtside-nba-stat-tracking
+git clone https://github.com/FarhnChy/Courtside.git
+cd Courtside
 npm install
 npm run dev
 ```
